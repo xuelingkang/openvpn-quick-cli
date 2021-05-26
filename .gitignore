@@ -1,0 +1,11 @@
+# clients
+clients/*
+!clients/example/
+
+# custom
+custom.properties
+
+# temp files directories
+*.swp
+.DS_Store
+

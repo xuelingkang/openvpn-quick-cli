@@ -1,0 +1,89 @@
+#!/bin/bash
+function help() {
+    for i in $(seq 1 ${i})
+    do
+        eval echo "${i}. \${choice${i}}"
+    done
+    echo "*. cancel"
+}
+
+function connect() {
+    index=$1
+    name=`eval echo '$'"{choice${index}}"`
+    cd "${home_folder}/${clients_home}/${name}"
+
+    if [ ! -f "${ppid_file}" ]; then
+        doConnect "${name}"
+        return
+    fi
+
+    ppid=`cat "${ppid_file}"`
+
+    if [ -z ${ppid} ]; then
+        doConnect "${name}"
+        return
+    fi
+
+    ps ${ppid} > /dev/null 2>&1
+    if [ "$?" -ne 0 ]; then
+        doConnect "${name}"
+        return
+    fi
+
+    echo "[${ppid}] ${name} already connected"
+}
+
+function doConnect() {
+    name="$1"
+    for file in ./*
+    do
+        if [ ! -z `echo "${file}" | grep -E "${vpn_file_suffix}$"` ]; then
+            sudo openvpn --config "${file}" --auth-user-pass ./"${account_file}" > /dev/null 2>&1 &
+            ppid="$!"
+            echo "${ppid}" > "${ppid_file}"
+            echo "[${ppid}] connect ${name}"
+        fi
+    done
+}
+
+home_folder="$(cd "$(dirname "$0")";pwd)/../"
+clients_home="$(${home_folder}bin/scripts/getConfig clients-home ${home_folder}custom.properties ${home_folder}default.properties)"
+exclude_clients="$(${home_folder}bin/scripts/getConfig exclude-clients ${home_folder}custom.properties ${home_folder}default.properties)"
+account_file="$(${home_folder}bin/scripts/getConfig account-file-name ${home_folder}custom.properties ${home_folder}default.properties)"
+ppid_file="$(${home_folder}bin/scripts/getConfig ppid-file-name ${home_folder}custom.properties ${home_folder}default.properties)"
+vpn_file_suffix="$(${home_folder}bin/scripts/getConfig vpn-file-suffix ${home_folder}custom.properties ${home_folder}default.properties)"
+
+i=1
+for file in "${home_folder}/${clients_home}"/*
+do
+    filename="${file##*/}"
+    if [ -d "${file}" ] && [ -z `echo ",${exclude_clients}," | grep ",${filename},"` ]; then
+        eval choice"${i}"="${filename}"
+        ((i+=1))
+    fi
+done
+eval choice"${i}"="'all above'"
+
+help
+read -p "choose the vpn to connect: " choice
+expr "${choice}" "+" 1 > /dev/null 2>&1
+if [ "$?" -ne 0 ]; then
+    echo "cancel"
+    exit 0
+fi
+if  [ "${choice}" -lt 1 ] || [ "${choice}" -gt "${i}" ]; then
+    echo "cancel"
+    exit 0
+fi
+
+if [ "${choice}" -eq "${i}" ]; then
+    ((max=i-1))
+    for index in $(seq 1 ${max})
+    do
+        connect "${index}"
+    done
+    exit 0
+fi
+
+connect "${choice}"
+

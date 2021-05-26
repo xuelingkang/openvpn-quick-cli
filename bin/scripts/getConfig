@@ -1,0 +1,19 @@
+#!/bin/bash
+name=$1
+config=$2
+fallbackConfig=$3
+
+result=`grep -E "^${name}=" "${config}" 2>/dev/null | awk -F '=' '{print $2}' 2>/dev/null`
+if [ ! -z "${result}" ]; then
+    echo "${result}"
+    exit 0
+fi
+
+result=`grep -E "^${name}=" "${fallbackConfig}" 2>/dev/null | awk -F '=' '{print $2}' 2>/dev/null`
+if [ -z "${result}" ]; then
+    echo "[${name}] no such config"
+    exit 1
+fi
+echo "${result}"
+exit 0
+
