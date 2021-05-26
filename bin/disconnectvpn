@@ -2,9 +2,9 @@
 function help() {
     for i in $(seq 1 ${i})
     do
-        eval echo "${i}. \${choice${i}}"
+        eval echo "'    '${i}. \${choice${i}}"
     done
-    echo "*. cancel"
+    echo "    *. cancel"
 }
 
 function disconnect() {
