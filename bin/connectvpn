@@ -38,7 +38,11 @@ function doConnect() {
     for file in ./*
     do
         if [ ! -z `echo "${file}" | grep -E "${vpn_file_suffix}$"` ]; then
-            sudo openvpn --config "${file}" --auth-user-pass ./"${account_file}" > /dev/null 2>&1 &
+            if [ ! -f "${account_file}" ]; then
+                sudo openvpn --config "${file}" > /dev/null 2>&1 &
+            else
+                sudo openvpn --config "${file}" --auth-user-pass ./"${account_file}" > /dev/null 2>&1 &
+            fi
             ppid="$!"
             echo "${ppid}" > "${ppid_file}"
             echo "[${ppid}] connect ${name}"
